@@ -2,7 +2,7 @@ try { require('dotenv').config(); } catch { /* dotenv optional; real environment
 const path = require('path');
 const express = require('express');
 const store = require('./src/store');
-const { requireAuth } = require('./src/auth');
+const { requireAuth, requirePage, guestOnly } = require('./src/auth');
 const c = require('./src/controllers');
 
 const app = express();
@@ -23,7 +23,10 @@ const h = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(
 const api = express.Router();
 api.post('/auth/register', limiter, h(c.register));
 api.post('/auth/login', limiter, h(c.login));
+api.post('/auth/logout', h(c.logout));
 api.get('/auth/me', requireAuth, h(c.me));
+api.put('/auth/profile', requireAuth, h(c.updateProfile));
+api.put('/auth/password', requireAuth, h(c.changePassword));
 api.get('/posts', h(c.listPosts));               // all blogs from the database
 api.get('/categories', h(c.categories));         // category list with post counts
 api.get('/posts/mine', requireAuth, h(c.myPosts));
@@ -33,6 +36,11 @@ api.put('/posts/:id', requireAuth, h(c.updatePost));
 api.delete('/posts/:id', requireAuth, h(c.deletePost));
 api.use((req, res) => res.status(404).json({ error: 'API route not found.' }));
 app.use('/api', api);
+
+// Protected pages: visitors without a valid login are redirected to the login page
+const view = (f) => (req, res) => { res.set('Cache-Control', 'no-store'); res.sendFile(path.join(__dirname, 'public', f)); };
+['dashboard', 'create-blog', 'profile'].forEach((p) => app.get('/' + p + '.html', requirePage, view(p + '.html')));
+['login', 'register'].forEach((p) => app.get('/' + p + '.html', guestOnly, view(p + '.html')));
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use((err, req, res, next) => {
