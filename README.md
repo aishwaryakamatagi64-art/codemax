@@ -1,51 +1,58 @@
-# Inkwell – Blog with Node.js + Express REST API
+# Inkwell – Blog with Node.js, Express and MongoDB
 
-## Run it
-1. Install Node.js 18 or newer from https://nodejs.org
-2. In this folder run:
-   ```
-   npm install
-   npm start
-   ```
-3. Open http://localhost:3000
+## 1. Get a MongoDB database (free)
+1. Create an account at https://www.mongodb.com/atlas and create a free cluster.
+2. Database Access: add a database user (username + password).
+3. Network Access: add your current IP address.
+4. Connect > Drivers: copy the connection string.
+(Or install MongoDB locally and use `mongodb://127.0.0.1:27017/inkwell`.)
 
-Optional: `npm test` runs the API tests (no install needed).
+## 2. Run the app
+```
+npm install
+copy .env.example .env      (Mac/Linux: cp .env.example .env)
+```
+Open `.env`, paste your connection string into `MONGODB_URI`, set a long random `TOKEN_SECRET`, then:
+```
+npm start
+```
+Open http://localhost:3000. The console prints "Database: MongoDB" when connected.
+If `MONGODB_URI` is empty, the app falls back to a JSON file (`data/db.json`) so you can still try it.
+The first start adds 3 sample posts to an empty database.
+
+`npm test` runs 18 API tests (no database needed).
 
 ## Folder structure
 ```
-server.js            Express app: routes, JSON parsing, static files, errors
-src/db.js            JSON-file database (data/db.json, created automatically)
-src/auth.js          scrypt password hashing, signed tokens, requireAuth middleware
-src/controllers.js   Handlers for register, login, posts
-public/              Frontend (HTML, CSS, js/app.js) served by Express
-test.js              API tests
+server.js              Express app and routes
+src/store/mongo.js     Mongoose models (User, Post) and MongoDB queries
+src/store/file.js      JSON-file fallback with the same methods
+src/store/index.js     Chooses MongoDB or file store
+src/auth.js            scrypt password hashing, signed tokens, requireAuth
+src/controllers.js     Register, login and blog handlers
+public/                Frontend: index (all blogs), post (blog details), login,
+                       register, dashboard, create-blog
 ```
+
+## How credentials and posts are stored securely
+- Passwords are never stored in plain text: each is hashed with scrypt and a random salt.
+- The API never returns password hashes.
+- The database password and token secret live in `.env`, which is listed in `.gitignore`.
+- Protected routes check a signed token that expires in 7 days; users can edit or delete only their own posts.
+- Input is validated on the server, search text is escaped before use in MongoDB queries, and the frontend escapes all text before showing it.
 
 ## REST API
 | Method | Endpoint | Auth | Purpose |
 |---|---|---|---|
-| POST | /api/auth/register | no | User Registration |
-| POST | /api/auth/login | no | User Login |
+| POST | /api/auth/register | no | Register |
+| POST | /api/auth/login | no | Log in |
 | GET | /api/auth/me | yes | Current user |
-| GET | /api/posts?q=&cat= | no | List / search posts |
-| GET | /api/posts/mine | yes | Your posts |
-| POST | /api/posts | yes | Create Blog |
-| PUT | /api/posts/:id | yes | Edit your post |
-| DELETE | /api/posts/:id | yes | Delete your post |
+| GET | /api/posts?q=&cat= | no | All blogs from the database |
+| GET | /api/posts/:id | no | One blog's details |
+| GET | /api/posts/mine | yes | Your blogs |
+| POST | /api/posts | yes | Create blog |
+| PUT | /api/posts/:id | yes | Edit your blog |
+| DELETE | /api/posts/:id | yes | Delete your blog |
 
-Protected routes need the header `Authorization: Bearer <token>` (the token is returned by register and login).
-
-### Try with curl
-```
-curl -X POST localhost:3000/api/auth/register -H "Content-Type: application/json" \
-  -d '{"name":"Asha Rao","email":"asha@example.com","password":"secret1"}'
-
-curl -X POST localhost:3000/api/posts -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{"title":"My first post","cat":"Technology","body":"Ten or more words are needed here so the post passes validation."}'
-```
-Errors return JSON like `{"error":"Email or password is incorrect."}` with a suitable status code (400, 401, 403, 404, 409, 429).
-
-## Notes
-- Passwords are hashed with scrypt; tokens are HMAC-signed and expire in 7 days. Set `TOKEN_SECRET` and `PORT` as environment variables for deployment.
-- The JSON-file database suits learning projects. For production, switch to MongoDB or PostgreSQL by replacing `src/db.js`.
+## Pages
+index.html (all blogs) · post.html?id=... (blog details) · login.html · register.html · dashboard.html · create-blog.html
