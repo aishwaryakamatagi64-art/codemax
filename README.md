@@ -20,7 +20,7 @@ Open http://localhost:3000. The console prints "Database: MongoDB" when connecte
 If `MONGODB_URI` is empty, the app falls back to a JSON file (`data/db.json`) so you can still try it.
 The first start adds 3 sample posts to an empty database.
 
-`npm test` runs 18 API tests (no database needed).
+`npm test` runs 20 API tests (no database needed).
 
 ## Folder structure
 ```
@@ -49,10 +49,21 @@ public/                Frontend: index (all blogs), post (blog details), login,
 | GET | /api/auth/me | yes | Current user |
 | GET | /api/posts?q=&cat= | no | All blogs from the database |
 | GET | /api/posts/:id | no | One blog's details |
+| GET | /api/categories | no | Categories with post counts |
 | GET | /api/posts/mine | yes | Your blogs |
 | POST | /api/posts | yes | Create blog |
 | PUT | /api/posts/:id | yes | Edit your blog |
 | DELETE | /api/posts/:id | yes | Delete your blog |
+
+## CRUD features
+| Operation | Where in the app | API |
+|---|---|---|
+| Create | Write page (create-blog.html) | POST /api/posts |
+| Read | Home (all blogs), post.html (one blog), Dashboard (your blogs) | GET /api/posts, /api/posts/:id, /api/posts/mine |
+| Update | Edit button on Dashboard and on your own blog page | PUT /api/posts/:id |
+| Delete | Delete button on Dashboard and on your own blog page (asks to confirm) | DELETE /api/posts/:id |
+
+Search and category filters: the home page has a search box and category buttons with post counts (GET /api/categories). Filters can be combined and are kept in the page address, e.g. `index.html?cat=Food&q=dosa`. The dashboard has its own search box.
 
 ## Pages
 index.html (all blogs) · post.html?id=... (blog details) · login.html · register.html · dashboard.html · create-blog.html

@@ -29,7 +29,9 @@ let n = 0; const ok = async (name, f) => { await f(); n++; console.log('  ok -',
   await ok('all blogs are retrieved (seed + new)', async () => assert.equal((await call(c.listPosts, {})).body.posts.length, 4));
   await ok('newest post comes first', async () => assert.equal((await call(c.listPosts, {})).body.posts[0].id, postId));
   await ok('search and category filter work', async () => { assert.equal((await call(c.listPosts, { query: { q: 'FIRST POST' } })).body.posts.length, 1); assert.equal((await call(c.listPosts, { query: { cat: 'Travel' } })).body.posts.length, 1); });
+  await ok('categories endpoint returns counts', async () => { const r = (await call(c.categories, {})).body; assert.equal(r.total, 4); assert.equal(r.categories.find((x) => x.name === 'Technology').count, 2); });
   await ok('single blog details by id', async () => { const r = await call(c.getPost, { params: { id: postId } }); assert.equal(r.code, 200); assert.equal(r.body.post.title, 'My first post'); });
+  await ok('combined search + category filter', async () => assert.equal((await call(c.listPosts, { query: { q: 'first', cat: 'Food' } })).body.posts.length, 0));
   await ok('unknown blog id gives 404', async () => assert.equal((await call(c.getPost, { params: { id: 'nope' } })).code, 404));
   await ok('my posts returns only mine', async () => assert.equal((await call(c.myPosts, auth())).body.posts.length, 1));
   await ok('update own post', async () => assert.equal((await call(c.updatePost, { ...auth(), params: { id: postId }, body: { title: 'Edited title', cat: 'Food', body: 'Edited body that is also long enough to pass the word check ok.' } })).body.post.title, 'Edited title'));

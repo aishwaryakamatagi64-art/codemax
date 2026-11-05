@@ -25,6 +25,7 @@ api.post('/auth/register', limiter, h(c.register));
 api.post('/auth/login', limiter, h(c.login));
 api.get('/auth/me', requireAuth, h(c.me));
 api.get('/posts', h(c.listPosts));               // all blogs from the database
+api.get('/categories', h(c.categories));         // category list with post counts
 api.get('/posts/mine', requireAuth, h(c.myPosts));
 api.get('/posts/:id', h(c.getPost));             // single blog details
 api.post('/posts', requireAuth, h(c.createPost));
