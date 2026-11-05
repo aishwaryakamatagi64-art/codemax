@@ -1,81 +1,51 @@
-# Inkwell – Blog with Node.js, Express and MongoDB
+# Full Stack Blog
 
-## 1. Get a MongoDB database (free)
-1. Create an account at https://www.mongodb.com/atlas and create a free cluster.
-2. Database Access: add a database user (username + password).
-3. Network Access: add your current IP address.
-4. Connect > Drivers: copy the connection string.
-(Or install MongoDB locally and use `mongodb://127.0.0.1:27017/inkwell`.)
+A lightweight, mobile-responsive blog with an Express REST API and a vanilla JS frontend. Includes dark mode, search, and password-protected admin CRUD.
 
-## 2. Run the app
-```
+## Features
+- Public: browse and read posts, search
+- Admin: create, edit and delete posts
+- Responsive layout, automatic dark mode
+- Input sanitisation (XSS-safe rendering), length limits
+- JSON-file persistence (no database setup)
+
+## Tech Stack
+Node.js 18+, Express, HTML/CSS/JavaScript
+
+## Run Locally
+```bash
 npm install
-copy .env.example .env      (Mac/Linux: cp .env.example .env)
+ADMIN_PASSWORD=yourSecret npm start     # Windows PowerShell: $env:ADMIN_PASSWORD="yourSecret"; npm start
 ```
-Open `.env`, paste your connection string into `MONGODB_URI`, set a long random `JWT_SECRET`, then:
-```
-npm start
-```
-Open http://localhost:3000. The console prints "Database: MongoDB" when connected.
-If `MONGODB_URI` is empty, the app falls back to a JSON file (`data/db.json`) so you can still try it.
-The first start adds 3 sample posts to an empty database.
+Open http://localhost:3000. Default password if unset: `admin123` (change it!).
 
-`npm test` runs 35 tests (no database needed).
-
-## Folder structure
-```
-server.js              Express app and routes
-src/store/mongo.js     Mongoose models (User, Post) and MongoDB queries
-src/store/file.js      JSON-file fallback with the same methods
-src/store/index.js     Chooses MongoDB or file store
-src/auth.js            scrypt password hashing, signed tokens, requireAuth
-src/controllers.js     Register, login and blog handlers
-public/                Frontend: index (all blogs), post (blog details), login,
-                       register, dashboard, create-blog, profile
-```
-
-## How credentials and posts are stored securely
-- Passwords are never stored in plain text: each is hashed with scrypt and a random salt.
-- The API never returns password hashes.
-- The database password and token secret live in `.env`, which is listed in `.gitignore`.
-- Protected routes check a signed token that expires in 7 days; users can edit or delete only their own posts.
-- Input is validated on the server, search text is escaped before use in MongoDB queries, and the frontend escapes all text before showing it.
-
-## REST API
-| Method | Endpoint | Auth | Purpose |
+## API
+| Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| POST | /api/auth/register | no | Register |
-| POST | /api/auth/login | no | Log in |
-| POST | /api/auth/logout | no | Log out (clears cookie) |
-| GET | /api/auth/me | yes | Current user / profile |
-| PUT | /api/auth/profile | yes | Change display name |
-| PUT | /api/auth/password | yes | Change password |
-| GET | /api/posts?q=&cat= | no | All blogs from the database |
-| GET | /api/posts/:id | no | One blog's details |
-| GET | /api/categories | no | Categories with post counts |
-| GET | /api/posts/mine | yes | Your blogs |
-| POST | /api/posts | yes | Create blog |
-| PUT | /api/posts/:id | yes | Edit your blog |
-| DELETE | /api/posts/:id | yes | Delete your blog |
+| GET | /api/posts?q= | – | List/search posts |
+| GET | /api/posts/:id | – | Get one post |
+| POST | /api/login | header | Verify admin password |
+| POST | /api/posts | header | Create post |
+| PUT | /api/posts/:id | header | Update post |
+| DELETE | /api/posts/:id | header | Delete post |
 
-## Authentication and sessions (JWT)
-- Register or log in and the server creates a standard **JWT** (HS256) with the user id (`sub`), name and a 7-day expiry.
-- The JWT is sent to the browser in an **httpOnly, SameSite=Strict cookie** (also `Secure` when `NODE_ENV=production`). JavaScript on the page cannot read it, which protects it from XSS theft. API tools like Postman can instead send `Authorization: Bearer <jwt>`.
-- The server rejects expired tokens, tampered tokens and tokens that use the `none` algorithm.
-- **Protected routes:** the server only serves `dashboard.html`, `create-blog.html` and `profile.html` to logged-in users; everyone else is redirected to `login.html`. Logged-in users who open login/register go to the dashboard. All private API routes use the `requireAuth` middleware.
-- **Dashboard shows only your blogs:** it calls `GET /api/posts/mine`, which filters by the user id inside the JWT (the browser cannot ask for another user's list). Edit and delete are checked against the owner on the server.
-- **Profile page (`profile.html`):** see your email, join date and blog count; change your display name (also updated on your blogs); change your password (needs the current password).
-- **Logout:** `POST /api/auth/logout` clears the cookie.
+Auth header: `x-admin-password: <ADMIN_PASSWORD>`
 
-## CRUD features
-| Operation | Where in the app | API |
-|---|---|---|
-| Create | Write page (create-blog.html) | POST /api/posts |
-| Read | Home (all blogs), post.html (one blog), Dashboard (your blogs) | GET /api/posts, /api/posts/:id, /api/posts/mine |
-| Update | Edit button on Dashboard and on your own blog page | PUT /api/posts/:id |
-| Delete | Delete button on Dashboard and on your own blog page (asks to confirm) | DELETE /api/posts/:id |
+## Deploy on Render (recommended)
+1. Push this folder to a GitHub repo.
+2. On https://render.com choose **New → Web Service** and connect the repo (or use **Blueprint** with `render.yaml`).
+3. Build command: `npm install`, Start command: `npm start`.
+4. Add environment variable `ADMIN_PASSWORD`.
+5. Deploy and open the generated URL.
 
-Search and category filters: the home page has a search box and category buttons with post counts (GET /api/categories). Filters can be combined and are kept in the page address, e.g. `index.html?cat=Food&q=dosa`. The dashboard has its own search box.
+Note: Render's free tier has an ephemeral disk, so posts reset on redeploy. For permanent storage, add a Render Disk or swap `data.json` for a database (MongoDB Atlas / Postgres). This JSON-file design also isn't suited to Vercel/Netlify serverless without a database.
 
-## Pages
-index.html (all blogs) · post.html?id=... (blog details) · login.html · register.html · dashboard.html · create-blog.html · profile.html
+## Project Structure
+```
+server.js        Express API + static hosting
+public/index.html  Frontend (SPA)
+render.yaml      Render blueprint
+```
+
+## License
+MIT
