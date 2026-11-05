@@ -1,0 +1,9 @@
+{
+  "name": "inkwell-blog-api",
+  "version": "1.0.0",
+  "description": "Inkwell blog: Node.js + Express REST API with a plain HTML/CSS/JS frontend",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "test": "node test.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "express": "^4.19.2" }
+}
